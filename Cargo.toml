@@ -57,7 +57,7 @@ pkg-url = "{ host }/{ owner }/{ repo }/releases/download/{ version }/{ name }-{ 
 bin-dir = "{ bin }"
 
 [workspace.metadata.dist]
-cargo-dist-version = "0.24.0"
+cargo-dist-version = "0.30.2"
 # Build release artifacts for common targets and generate simple installers
 targets = [
     "x86_64-unknown-linux-gnu",
