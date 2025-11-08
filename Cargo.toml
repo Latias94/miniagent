@@ -57,15 +57,21 @@ pkg-url = "{ host }/{ owner }/{ repo }/releases/download/{ version }/{ name }-{ 
 bin-dir = "{ bin }"
 
 [workspace.metadata.dist]
+# The preferred dist version to use in CI (Cargo.toml SemVer syntax)
 cargo-dist-version = "0.30.2"
-# Build release artifacts for common targets and generate simple installers
+# CI backends to support
+ci = "github"
+# The installers to generate for each app
+installers = ["shell", "powershell"]
+# Target platforms to build apps for (Rust target-triple syntax)
 targets = [
     "x86_64-unknown-linux-gnu",
     "x86_64-pc-windows-msvc",
     "aarch64-apple-darwin",
     "x86_64-apple-darwin",
 ]
-installers = ["shell", "powershell"]
+# Which actions to run on pull requests
+pr-run-mode = "plan"
 
 [features]
 # Default features include accurate tokenization and embedding skills into the binary
