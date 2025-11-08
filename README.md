@@ -37,22 +37,14 @@ cargo run -- -w .
 ```shell
 $ cargo run -- -w .
 
-You > Load the demo skill and show its content
+You > Load the internal-comms skill and summarize the guidelines
 
-# The agent will call the tool get_skill(skill_name="demo") automatically.
+# The agent will call the tool get_skill(skill_name="internal-comms") automatically.
 # You should see absolute paths rewritten in the returned content, like:
-#   - python /abs/path/to/skills/demo/scripts/hello.py
-#   - `.../skills/demo/reference.md` (use read_file to access)
+#   - `.../skills/internal-comms/examples/company-newsletter.md` (use read_file to access)
 
-You > Please read the reference document mentioned in the skill
-
+You > Read the company newsletter guideline and outline the sections
 # The agent will likely call read_file with the rewritten absolute path and print the content.
-
-You > Record an important note: "Prefer concise responses"
-
-# The agent may call record_note and then you can later:
-You > Recall notes
-# The agent may call recall_notes and display the notes.
 ```
 
 ## Configuration
@@ -78,16 +70,16 @@ See `config/config-example.yaml` for a complete example.
 - Note: `provider=openai-compatible` requires a `base_url` (or `MINIAGENT_BASE_URL`).
 
 ## Skills (Claude Skills)
-This repo includes a demo skill at `skills/demo/`:
-- `skills/demo/SKILL.md` with frontmatter `name: demo` and references:
-  - `python scripts/hello.py`
-  - `reference.md`
-  - Markdown link `[Guide](./reference.md)`
-- During `get_skill`, miniagent rewrites these paths to absolute ones and annotates them with "use read_file to access".
+This repo includes the official Claude Skills under `skills/`. At build time we embed the entire directory into the binary (via `include_dir`, feature `embed-skills` enabled by default). On first run, if no on-disk skills are found, the embedded skills are extracted to `~/.miniagent/skills` automatically. The Agent uses Progressive Disclosure:
 
-Try:
-- In REPL: "Load the demo skill and show its content", or make the model call tool `get_skill` with `skill_name="demo"`.
-- Then use `read_file` on the rewritten absolute paths.
+- Level 1: The names/descriptions of all discovered skills are injected into the system prompt.
+- Level 2: The model loads full guidance using the tool `get_skill(skill_name)` when needed.
+- Level 3+: Any relative file references in the skill content (e.g., under `examples/`, `scripts/`, `templates/`, `reference/`) are rewritten to absolute paths, with a hint to use `read_file`.
+
+Examples of skill names you can load:
+- `internal-comms`, `webapp-testing`, `mcp-builder`, `canvas-design`, `artifacts-builder`, `document-skills/pdf`, `document-skills/pptx`, `document-skills/docx`, `document-skills/xlsx`, `slack-gif-creator`, etc.
+
+In the REPL, just describe your task; the model will decide when to call `get_skill`. You can also explicitly ask it to load a specific skill.
 
 ## Tools
 
@@ -147,3 +139,11 @@ Tip: Adjust `completion_reserve` (default 2048) to keep room for completions.
 ## References
 
 - This project is inspired by and references: https://github.com/MiniMax-AI/Mini-Agent/
+
+## Build Features
+
+- Default enabled features: `tiktoken`, `embed-skills`.
+- Disable embedded skills (use on-disk skills only):
+  - `cargo run --no-default-features --features "tiktoken"`
+- Disable tiktoken too (use approximate estimator):
+  - `cargo run --no-default-features`

@@ -14,6 +14,8 @@ use crate::tools::{
     file::{EditTool, ReadTool, WriteTool},
     skills::{GetSkillTool, SkillLoader},
 };
+#[cfg(feature = "embed-skills")]
+use include_dir::{Dir, include_dir};
 
 mod mcp;
 mod repl;
@@ -21,6 +23,10 @@ mod run;
 mod skills;
 mod tools;
 mod userconfig;
+
+// Embed the entire skills directory into the binary
+#[cfg(feature = "embed-skills")]
+static EMBEDDED_SKILLS: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/skills");
 
 #[derive(Parser, Debug)]
 #[command(name = "miniagent", version, about = "Miniagent - Rust LLM Agent with tools & MCP", long_about = None, disable_help_subcommand = true)]
@@ -132,15 +138,51 @@ pub(super) async fn build_agent(
     if cfg.tools.enable_skills {
         let mut skills_dir = PathBuf::from(&cfg.tools.skills_dir);
         if !skills_dir.is_absolute() {
-            let candidates = [
-                PathBuf::from(&cfg.tools.skills_dir),
-                PathBuf::from("miniagent").join(&cfg.tools.skills_dir),
-                PathBuf::from("skills"),
-            ];
+            // Search priority:
+            // 1) Path from config (relative to CWD)
+            // 2) ./miniagent/<skills_dir>
+            // 3) ./skills
+            // 4) ~/.miniagent/skills (user-shared skills location)
+            let mut candidates = Vec::new();
+            candidates.push(PathBuf::from(&cfg.tools.skills_dir));
+            candidates.push(PathBuf::from("miniagent").join(&cfg.tools.skills_dir));
+            candidates.push(PathBuf::from("skills"));
+            if let Some(home) = dirs::home_dir() {
+                candidates.push(home.join(".miniagent").join("skills"));
+            }
+            let mut found = false;
             for c in candidates {
                 if c.exists() {
                     skills_dir = c;
+                    found = true;
                     break;
+                }
+            }
+            if !found {
+                // No on-disk skills found; extract embedded skills to ~/.miniagent/skills
+                #[cfg(feature = "embed-skills")]
+                {
+                    if let Some(home) = dirs::home_dir() {
+                        let target = home.join(".miniagent").join("skills");
+                        if !target.exists() {
+                            if let Err(e) = EMBEDDED_SKILLS.extract(&target) {
+                                eprintln!(
+                                    "{} {}",
+                                    "Failed to extract embedded skills:".yellow(),
+                                    e
+                                );
+                            } else {
+                                println!(
+                                    "{} {}",
+                                    "Installed embedded skills to".green(),
+                                    target.display()
+                                );
+                            }
+                        }
+                        if target.exists() {
+                            skills_dir = target;
+                        }
+                    }
                 }
             }
         }

@@ -39,6 +39,14 @@ tools:
   enable_bash: true
   enable_note: true
   enable_skills: true
+  # Directory containing Claude Skills (SKILL.md files)
+  # - By default, the entire `skills/` directory is embedded into the binary.
+  # - At runtime, miniagent searches in this order and uses the first that exists:
+  #     1) <this relative or absolute path>
+  #     2) ./miniagent/<skills_dir>
+  #     3) ./skills
+  #     4) ~/.miniagent/skills (fallback location)
+  # - If none exists on disk, the embedded skills are extracted to ~/.miniagent/skills.
   skills_dir: ./skills
   enable_mcp: true
   mcp_config_path: mcp.json
