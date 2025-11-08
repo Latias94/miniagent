@@ -16,6 +16,8 @@ use crate::tools::{
 };
 #[cfg(feature = "embed-skills")]
 use include_dir::{Dir, include_dir};
+#[cfg(target_os = "windows")]
+use which::which;
 
 mod mcp;
 mod repl;
@@ -29,11 +31,23 @@ mod userconfig;
 static EMBEDDED_SKILLS: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/skills");
 
 #[derive(Parser, Debug)]
-#[command(name = "miniagent", version, about = "Miniagent - Rust LLM Agent with tools & MCP", long_about = None, disable_help_subcommand = true)]
+#[command(
+    name = "miniagent",
+    version,
+    about = "Miniagent - Rust LLM Agent with tools & MCP",
+    long_about = None,
+    disable_help_subcommand = true,
+    // Ensure `miniagent skills list` is parsed as subcommand, not workspace path
+    subcommand_precedence_over_arg = true,
+)]
 pub struct Cli {
     /// Workspace directory (default: current dir)
     #[arg(short, long)]
     pub workspace: Option<PathBuf>,
+    /// Optional positional workspace directory, e.g. `miniagent ./my-workspace`
+    /// Conflicts with --workspace
+    #[arg(value_name = "WORKSPACE", conflicts_with = "workspace")]
+    pub workspace_pos: Option<PathBuf>,
 
     /// Command to run (default: repl)
     #[command(subcommand)]
@@ -70,7 +84,10 @@ pub enum Command {
 
 pub async fn run_cli() -> anyhow::Result<()> {
     let cli = Cli::parse();
-    let workspace = cli.workspace.unwrap_or(std::env::current_dir()?);
+    let workspace = cli
+        .workspace
+        .or(cli.workspace_pos)
+        .unwrap_or(std::env::current_dir()?);
     tokio::fs::create_dir_all(&workspace).await.ok();
 
     match cli.command.unwrap_or(Command::Repl) {
@@ -114,7 +131,7 @@ pub(super) async fn build_agent(
         }
     };
 
-    let llm = LlmClient::from_config(&cfg.llm).await?;
+    let llm_primary = LlmClient::from_config(&cfg.llm).await?;
 
     // Tools
     let mut toolset: Vec<Arc<dyn Tool>> = Vec::new();
@@ -231,6 +248,34 @@ pub(super) async fn build_agent(
         system_prompt = system_prompt.replace("{SKILLS_METADATA}", "");
     }
 
+    // Append execution environment details to help the model choose correct commands
+    let os = std::env::consts::OS;
+    let arch = std::env::consts::ARCH;
+    #[cfg(target_os = "windows")]
+    let default_shell: String = {
+        if which("pwsh").is_ok() {
+            "pwsh -NoLogo -Command".to_string()
+        } else if which("powershell").is_ok() {
+            "powershell -NoLogo -Command".to_string()
+        } else {
+            "cmd.exe /C".to_string()
+        }
+    };
+    #[cfg(not(target_os = "windows"))]
+    let default_shell: String = "bash -lc".to_string();
+    let path_sep = if cfg!(target_os = "windows") {
+        "\\"
+    } else {
+        "/"
+    };
+    let env_section = format!(
+        "\n\n## Execution Environment\n- OS: {} ({})\n- Default shell for tool 'bash': {}\n- Path separator: {}\n- Tip: On Windows, prefer PowerShell-friendly commands (e.g., Get-ChildItem -Force instead of 'ls -la').",
+        os, arch, default_shell, path_sep
+    );
+    if !system_prompt.contains("## Execution Environment") {
+        system_prompt.push_str(&env_section);
+    }
+
     if !system_prompt.contains("Current Workspace") {
         let abs = workspace.canonicalize().unwrap_or(workspace.clone());
         let appendix = format!(
@@ -240,7 +285,7 @@ pub(super) async fn build_agent(
         system_prompt.push_str(&appendix);
     }
 
-    let agent = Agent::builder(llm, system_prompt)
+    let agent = Agent::builder(llm_primary.clone(), system_prompt)
         .with_tools(toolset)
         .with_max_steps(cfg.agent.max_steps)
         .with_token_limit(cfg.agent.token_limit)

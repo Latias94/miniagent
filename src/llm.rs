@@ -21,6 +21,15 @@ impl LlmClient {
                 b = b.base_url(url.clone());
             }
             b.build().await?
+        } else if provider == "google" || provider == "gemini" {
+            let mut b = siumai::provider::Siumai::builder()
+                .gemini()
+                .api_key(cfg.api_key.clone())
+                .model(cfg.model.clone());
+            if let Some(url) = &cfg.base_url {
+                b = b.base_url(url.clone());
+            }
+            b.build().await?
         } else if provider == "openai" {
             let mut b = siumai::provider::Siumai::builder()
                 .openai()

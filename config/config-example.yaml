@@ -6,15 +6,17 @@ llm:
   #   - openai
   #   - minimaxi (MiniMax native; recommended)
   #   - openai-compatible (requires base_url)
+  #   - google / gemini
   provider: minimaxi
 
   # API key for the selected provider
   api_key: YOUR_API_KEY_HERE
 
   # Model for the provider (examples):
-  #   - anthropic: claude-3-5-sonnet-20241022
+  #   - anthropic: claude-sonnet-4-5-20250929
   #   - openai: gpt-4o-mini
   #   - minimaxi: MiniMax-M2
+  #   - google/gemini: gemini-2.5-pro, gemini-2.5-flash
   model: MiniMax-M2
 
   # Optional: custom endpoint (mostly for openai-compatible)
@@ -37,6 +39,8 @@ agent:
 tools:
   enable_file_tools: true
   enable_bash: true
+  # On Windows, the shell tool prefers PowerShell (pwsh), then Windows PowerShell,
+  # and falls back to cmd.exe. On Unix, it uses `bash -lc`.
   enable_note: true
   enable_skills: true
   # Directory containing Claude Skills (SKILL.md files)

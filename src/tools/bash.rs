@@ -14,7 +14,7 @@ impl Tool for BashTool {
         "bash"
     }
     fn description(&self) -> &str {
-        "Execute a shell command in the workspace"
+        "Execute a shell command in the workspace (Windows: PowerShell if available, otherwise cmd.exe; Unix: bash -lc)"
     }
     fn parameters(&self) -> Value {
         json!({
@@ -35,9 +35,28 @@ impl Tool for BashTool {
         };
 
         #[cfg(target_os = "windows")]
-        let mut command = tokio::process::Command::new("cmd");
-        #[cfg(target_os = "windows")]
-        let command = command.arg("/C").arg(cmd).current_dir(&self.workspace);
+        let mut command = {
+            // Prefer PowerShell (pwsh), then Windows PowerShell, then cmd.exe
+            if which::which("pwsh").is_ok() {
+                let mut c = tokio::process::Command::new("pwsh");
+                c.arg("-NoLogo")
+                    .arg("-Command")
+                    .arg(cmd)
+                    .current_dir(&self.workspace);
+                c
+            } else if which::which("powershell").is_ok() {
+                let mut c = tokio::process::Command::new("powershell");
+                c.arg("-NoLogo")
+                    .arg("-Command")
+                    .arg(cmd)
+                    .current_dir(&self.workspace);
+                c
+            } else {
+                let mut c = tokio::process::Command::new("cmd");
+                c.arg("/C").arg(cmd).current_dir(&self.workspace);
+                c
+            }
+        };
 
         #[cfg(not(target_os = "windows"))]
         let mut command = tokio::process::Command::new("bash");

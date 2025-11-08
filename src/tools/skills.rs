@@ -44,8 +44,8 @@ impl SkillLoader {
 
     fn load_file(&mut self, path: &Path) -> anyhow::Result<()> {
         let content = std::fs::read_to_string(path)?;
-        // very simple frontmatter parser
-        let fm = Regex::new(r"^---\n(?s)(.*?)\n---\n(.*)$").unwrap();
+        // very simple frontmatter parser (support both LF and CRLF)
+        let fm = Regex::new(r"^---\r?\n(?s)(.*?)\r?\n---\r?\n(.*)$").unwrap();
         if let Some(caps) = fm.captures(&content) {
             let meta: serde_yaml::Value = serde_yaml::from_str(caps.get(1).unwrap().as_str())?;
             let name = meta

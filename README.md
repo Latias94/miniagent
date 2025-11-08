@@ -26,7 +26,14 @@ A minimal, ergonomic LLM agent in Rust inspired by [Mini-Agent](https://github.c
 
 1) Run
 ```bash
-cargo run -- -w .
+# Use current directory as workspace
+cargo run --
+
+# Or specify workspace (flag)
+cargo run -- -w ./workspace
+
+# Or specify workspace (positional)
+cargo run -- ./workspace
 ```
 
 - Default tokenization uses tiktoken; to disable: `cargo run --no-default-features -- -w .`
@@ -50,13 +57,15 @@ You > Read the company newsletter guideline and outline the sections
 ## Configuration
 
 - `llm`
-  - `provider`: `anthropic`, `openai`, `minimaxi` (MiniMax native, recommended), or `openai-compatible` (requires `base_url`)
-  - `api_key`: provider API key
-  - `model`: e.g. `claude-3-5-sonnet-20241022`, `gpt-4o-mini`, `MiniMax-M2`
-  - `base_url` (optional): custom endpoint for OpenAI-compatible servers
+  - `provider`: `anthropic`, `openai`, `minimaxi` (MiniMax native), `google`/`gemini`, or `openai-compatible` (requires `base_url`)
+  - `api_key`: provider API key (supports env fallbacks: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `MINIMAXI_API_KEY`/`MINIMAX_API_KEY`, `GEMINI_API_KEY`)
+  - `model`: e.g. `claude-sonnet-4-5-20250929`, `gpt-4o-mini`, `MiniMax-M2`, `gemini-2.5-pro` or `gemini-2.5-flash`
+  - `base_url` (optional): custom endpoint for OpenAI-compatible servers (or Gemini enterprise/Vertex variants)
   - `retry`: `enabled`, `max_retries`, `initial_delay`, `max_delay`, `exponential_base`
 - `agent`: `max_steps`, `token_limit` (default 80000), `completion_reserve` (default 2048), `workspace_dir`, `system_prompt_path`
 - `tools`: enable/disable; `skills_dir`; `mcp_config_path`
+
+Note: miniagent uses a single LLM configuration for the whole run. If you want to switch providers/models, update the `llm` section in your config.
 
 Config precedence: `./miniagent/config/` → `~/.miniagent/config/` → `./config/`.
 See `config/config-example.yaml` for a complete example.
@@ -85,6 +94,8 @@ In the REPL, just describe your task; the model will decide when to call `get_sk
 
 - `read_file`, `write_file`, `edit_file`: file operations scoped to the workspace.
 - `bash`: runs shell commands in the workspace directory.
+  - Windows: prefers PowerShell (`pwsh`), then Windows PowerShell, otherwise `cmd.exe`.
+  - Unix: uses `bash -lc`.
 - `record_note`, `recall_notes`: session notes in `<workspace>/.agent_memory.json`.
 - `get_skill`: load full content of a skill by name.
 - MCP tools: loaded at runtime from `config/mcp.json` (see below).

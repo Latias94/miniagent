@@ -39,7 +39,7 @@ fn default_provider() -> String {
     "anthropic".to_string()
 }
 fn default_model() -> String {
-    "claude-3-5-sonnet-20241022".to_string()
+    "claude-sonnet-4-5-20250929".to_string()
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -265,6 +265,7 @@ impl Config {
         // Provider-specific fallbacks
         let provider_key = match provider_lc.as_str() {
             "anthropic" => Some("ANTHROPIC_API_KEY"),
+            "google" | "gemini" => Some("GEMINI_API_KEY"),
             "openai" => Some("OPENAI_API_KEY"),
             "minimax" => Some("MINIMAX_API_KEY"),
             "minimaxi" => Some("MINIMAXI_API_KEY"),
