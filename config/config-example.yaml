@@ -1,0 +1,44 @@
+# Minimal example configuration for miniagent
+
+llm:
+  # Provider:
+  #   - anthropic (default)
+  #   - openai
+  #   - minimaxi (MiniMax native; recommended)
+  #   - openai-compatible (requires base_url)
+  provider: minimaxi
+
+  # API key for the selected provider
+  api_key: YOUR_API_KEY_HERE
+
+  # Model for the provider (examples):
+  #   - anthropic: claude-3-5-sonnet-20241022
+  #   - openai: gpt-4o-mini
+  #   - minimaxi: MiniMax-M2
+  model: MiniMax-M2
+
+  # Optional: custom endpoint (mostly for openai-compatible)
+  # base_url: https://api.example.com/v1
+
+  retry:
+    enabled: true
+    max_retries: 3
+    initial_delay: 1.0
+    max_delay: 60.0
+    exponential_base: 2.0
+
+agent:
+  max_steps: 50
+  workspace_dir: ./workspace
+  system_prompt_path: system_prompt.md
+  # token_limit uses default 80000 if omitted
+  completion_reserve: 2048
+
+tools:
+  enable_file_tools: true
+  enable_bash: true
+  enable_note: true
+  enable_skills: true
+  skills_dir: ./skills
+  enable_mcp: true
+  mcp_config_path: mcp.json
