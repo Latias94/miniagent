@@ -6,6 +6,11 @@ license = "MIT OR Apache-2.0"
 authors = ["Mingzhen Zhuang <superfrankie621@gmail.com>"]
 repository = "https://github.com/Latias94/miniagent"
 homepage = "https://github.com/Latias94/miniagent"
+description = "Minimal single agent demo with basic file tools and MCP support"
+readme = "README.md"
+keywords = ["llm", "agent", "mcp", "cli", "ai"]
+# Categories are curated by crates.io; adjust if publishing
+categories = ["command-line-utilities", "development-tools", "asynchronous"]
 
 [dependencies]
 anyhow = "1"
@@ -45,6 +50,22 @@ chrono = { version = "0.4", features = ["clock", "std"] }
 rustyline = "17"
 once_cell = "1"
 include_dir = "0.7"
+
+[package.metadata.binstall]
+# Artifact layout compatible with cargo-dist defaults
+pkg-url = "{ host }/{ owner }/{ repo }/releases/download/{ version }/{ name }-{ version }-{ target }.{ archive-format }"
+bin-dir = "{ bin }"
+
+[workspace.metadata.dist]
+cargo-dist-version = "0.24.0"
+# Build release artifacts for common targets and generate simple installers
+targets = [
+    "x86_64-unknown-linux-gnu",
+    "x86_64-pc-windows-msvc",
+    "aarch64-apple-darwin",
+    "x86_64-apple-darwin",
+]
+installers = ["shell", "powershell"]
 
 [features]
 # Default features include accurate tokenization and embedding skills into the binary

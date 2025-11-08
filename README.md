@@ -1,6 +1,6 @@
 # miniagent
 
-A minimal, ergonomic LLM agent in Rust inspired by [Mini-Agent](https://github.com/MiniMax-AI/Mini-Agent/), using:
+Minimal single agent demo with basic file tools and MCP support.
 
 - [siumai](https://github.com/YumchaLabs/siumai) (unified multi-provider LLM client)
 - [rmcp](https://github.com/modelcontextprotocol/rust-sdk) (Rust MCP SDK) for loading external tools
@@ -158,3 +158,14 @@ Tip: Adjust `completion_reserve` (default 2048) to keep room for completions.
   - `cargo run --no-default-features --features "tiktoken"`
 - Disable tiktoken too (use approximate estimator):
   - `cargo run --no-default-features`
+## Installation
+
+- With cargo-binstall (prebuilt binaries):
+  - Install cargo-binstall: `cargo install cargo-binstall`
+  - Install miniagent: `cargo binstall miniagent`
+
+- From source (stable toolchain):
+  - `cargo install --git https://github.com/Latias94/miniagent`
+
+We publish release artifacts using cargo-dist. Assets follow the pattern
+`miniagent-<version>-<target>.<zip|tar.gz>` and include simple shell/PowerShell installers.
