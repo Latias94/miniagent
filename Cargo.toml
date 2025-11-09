@@ -43,7 +43,7 @@ async-trait = "0.1"
 which = "8"
 
 # LLM client
-siumai = { version = "0.11.0-beta.2", features = [
+siumai = { version = "0.11.0-beta.3", features = [
     "anthropic",
     "openai",
     "minimaxi",
