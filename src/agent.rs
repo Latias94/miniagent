@@ -9,7 +9,7 @@ use crate::tools::{Tool, base::ToolResult};
 use colored::*;
 use serde_json::json;
 use siumai::traits::ChatCapability;
-use siumai::types::{ChatMessage, ContentPart, MessageContent, Tool as SiumaiTool};
+use siumai::types::{ChatMessage, ChatRequest, ContentPart, MessageContent, Tool as SiumaiTool};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -137,40 +137,14 @@ impl Agent {
             });
             self.logger.log_request(&req_json);
 
-            // Call LLM with manual retry per config-like defaults
+            // Call LLM (built-in retry is configured on the Siumai client via builder)
             let tools_vec = self
                 .tools
                 .values()
                 .map(|t| t.to_siumai_tool())
                 .collect::<Vec<_>>();
-            let mut attempt = 1u32;
-            let max_retries = self.retry.max_retries as u32;
-            let initial_delay = std::time::Duration::from_secs_f32(self.retry.initial_delay);
-            let max_delay = std::time::Duration::from_secs_f32(self.retry.max_delay);
-            let base = self.retry.exponential_base as f32;
-            let response = loop {
-                match self
-                    .llm
-                    .inner()
-                    .chat_with_tools(self.messages.clone(), Some(tools_vec.clone()))
-                    .await
-                {
-                    Ok(r) => break r,
-                    Err(e) => {
-                        if attempt > max_retries {
-                            let err =
-                                format!("LLM call failed after {} retries: {}", max_retries, e);
-                            println!("{} {}", "!".red(), err);
-                            return Ok(err);
-                        }
-                        let delay = (initial_delay.as_secs_f32() * base.powi((attempt as i32) - 1))
-                            .min(max_delay.as_secs_f32());
-                        self.observer.on_retry(attempt, delay, &format!("{}", e));
-                        tokio::time::sleep(std::time::Duration::from_secs_f32(delay)).await;
-                        attempt += 1;
-                    }
-                }
-            };
+            let req = ChatRequest::new(self.messages.clone()).with_tools(tools_vec);
+            let response = self.llm.inner().chat_request(req).await?;
 
             // Log response
             let resp_json = json!({

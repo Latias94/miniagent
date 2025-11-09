@@ -14,6 +14,18 @@ Minimal single agent demo with basic file tools and MCP support.
 - Workspace-scoped execution; log per run at `~/.miniagent/log/`
 - Claude Skills progressive disclosure: metadata in system prompt + `get_skill` on demand
 
+## Installation
+
+- With cargo-binstall (prebuilt binaries):
+  - Install cargo-binstall: `cargo install cargo-binstall`
+  - Install miniagent: `cargo binstall miniagent`
+
+- From source (stable toolchain):
+  - `cargo install --git https://github.com/Latias94/miniagent`
+
+We publish release artifacts using cargo-dist. Assets follow the pattern
+`miniagent-<version>-<target>.<zip|tar.gz>` and include simple shell/PowerShell installers.
+
 ## Quick Start
 
 1) Install Rust (1.75+ recommended) and clone this repo.
@@ -60,12 +72,50 @@ You > Read the company newsletter guideline and outline the sections
   - `provider`: `anthropic`, `openai`, `minimaxi` (MiniMax native), `google`/`gemini`, or `openai-compatible` (requires `base_url`)
   - `api_key`: provider API key (supports env fallbacks: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `MINIMAXI_API_KEY`/`MINIMAX_API_KEY`, `GEMINI_API_KEY`)
   - `model`: e.g. `claude-sonnet-4-5-20250929`, `gpt-4o-mini`, `MiniMax-M2`, `gemini-2.5-pro` or `gemini-2.5-flash`
-  - `base_url` (optional): custom endpoint for OpenAI-compatible servers (or Gemini enterprise/Vertex variants)
+  - `base_url` (optional): custom endpoint for OpenAI-compatible servers (or Gemini enterprise/Vertex variants). For generic OpenAI‑compatible servers, include the API path (e.g. `https://api.example.com/v1`).
   - `retry`: `enabled`, `max_retries`, `initial_delay`, `max_delay`, `exponential_base`
 - `agent`: `max_steps`, `token_limit` (default 80000), `completion_reserve` (default 2048), `workspace_dir`, `system_prompt_path`
 - `tools`: enable/disable; `skills_dir`; `mcp_config_path`
 
 Note: miniagent uses a single LLM configuration for the whole run. If you want to switch providers/models, update the `llm` section in your config.
+
+OpenAI‑compatible usage:
+- Generic servers: set `provider: openai-compatible` and provide `base_url` + `api_key` (e.g. `https://api.example.com/v1`).
+- Built‑in providers: set `provider` to the specific ID (e.g. `siliconflow`, `deepseek`, `openrouter`) and provide `api_key` — no `base_url` needed.
+
+Retry:
+- miniagent now uses Siumai’s built‑in retry; configure under `llm.retry`.
+
+### Examples
+
+```yaml
+llm:
+  # Generic OpenAI-compatible server
+  provider: openai-compatible
+  base_url: https://api.example.com/v1
+  api_key: YOUR_API_KEY
+  model: gpt-4o-mini
+  retry:
+    enabled: true
+    max_retries: 3
+    initial_delay: 1.0
+    max_delay: 60.0
+    exponential_base: 2.0
+```
+
+```yaml
+llm:
+  # Built-in OpenAI-compatible provider (adapter-aware)
+  provider: siliconflow
+  api_key: YOUR_API_KEY
+  model: deepseek-ai/DeepSeek-V3
+  retry:
+    enabled: true
+    max_retries: 3
+    initial_delay: 1.0
+    max_delay: 60.0
+    exponential_base: 2.0
+```
 
 Config precedence: `./miniagent/config/` → `~/.miniagent/config/` → `./config/`.
 See `config/config-example.yaml` for a complete example.
@@ -158,23 +208,3 @@ Tip: Adjust `completion_reserve` (default 2048) to keep room for completions.
 
 - This project is inspired by and references: https://github.com/MiniMax-AI/Mini-Agent/
 
-## Build Features
-
-- Default enabled features: `tiktoken` (no embedded skills to keep the crate small).
-- Enable embedded skills (includes `./skills` at compile time):
-  - `cargo run --features "tiktoken,embed-skills"`
-- Disable tiktoken too (use approximate estimator):
-  - `cargo run --no-default-features`
-
-Note: Release artifacts built with `cargo-dist` can opt-in to `embed-skills` if you prefer an all‑in‑one binary; crates.io packages exclude large assets.
-## Installation
-
-- With cargo-binstall (prebuilt binaries):
-  - Install cargo-binstall: `cargo install cargo-binstall`
-  - Install miniagent: `cargo binstall miniagent`
-
-- From source (stable toolchain):
-  - `cargo install --git https://github.com/Latias94/miniagent`
-
-We publish release artifacts using cargo-dist. Assets follow the pattern
-`miniagent-<version>-<target>.<zip|tar.gz>` and include simple shell/PowerShell installers.
