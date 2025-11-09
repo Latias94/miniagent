@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use crate::agent::Agent;
+use crate::cli::skills::fetch_or_update_skills;
 use crate::config::Config;
 use crate::llm::LlmClient;
 use crate::tools::Tool;
@@ -111,6 +112,34 @@ pub(super) async fn build_agent(
         );
         let created = userconfig::init_user_config_noninteractive()?;
         println!("{} {}", "Created:".green(), created.display());
+        // If skills are not embedded, attempt to fetch them on first run to improve UX
+        #[cfg(not(feature = "embed-skills"))]
+        {
+            if let Some(home) = dirs::home_dir() {
+                let target = home.join(".miniagent").join("skills");
+                println!(
+                    "{} {}",
+                    "No skills found; attempting to fetch into".yellow(),
+                    target.display()
+                );
+                if let Err(e) =
+                    fetch_or_update_skills("https://github.com/anthropics/skills", &target, false)
+                        .await
+                {
+                    eprintln!("{} {}", "Auto-fetch of Claude Skills failed:".yellow(), e);
+                    eprintln!(
+                        "{}",
+                        "Tip: run 'miniagent skills fetch' later to install skills."
+                    );
+                } else {
+                    println!(
+                        "{} {}",
+                        "Installed Claude Skills to".green(),
+                        target.display()
+                    );
+                }
+            }
+        }
         println!(
             "{}",
             "Please edit the file to set your API key (api_key) and rerun.".yellow()
@@ -176,7 +205,8 @@ pub(super) async fn build_agent(
                 }
             }
             if !found {
-                // No on-disk skills found; extract embedded skills to ~/.miniagent/skills
+                // No on-disk skills found; try to extract embedded skills (if enabled),
+                // otherwise fetch them automatically into ~/.miniagent/skills.
                 #[cfg(feature = "embed-skills")]
                 {
                     if let Some(home) = dirs::home_dir() {
@@ -197,6 +227,39 @@ pub(super) async fn build_agent(
                             }
                         }
                         if target.exists() {
+                            skills_dir = target;
+                        }
+                    }
+                }
+                #[cfg(not(feature = "embed-skills"))]
+                {
+                    if let Some(home) = dirs::home_dir() {
+                        let target = home.join(".miniagent").join("skills");
+                        if !target.exists() {
+                            if let Err(e) = fetch_or_update_skills(
+                                "https://github.com/anthropics/skills",
+                                &target,
+                                false,
+                            )
+                            .await
+                            {
+                                eprintln!(
+                                    "{} {}",
+                                    "Failed to auto-fetch Claude Skills:".yellow(),
+                                    e
+                                );
+                                eprintln!(
+                                    "{}",
+                                    "You can also run 'miniagent skills fetch' manually."
+                                );
+                            }
+                        }
+                        if target.exists() {
+                            println!(
+                                "{} {}",
+                                "Installed Claude Skills to".green(),
+                                target.display()
+                            );
                             skills_dir = target;
                         }
                     }

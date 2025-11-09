@@ -12,6 +12,17 @@ keywords = ["llm", "agent", "mcp", "cli", "ai"]
 # Categories are curated by crates.io; adjust if publishing
 categories = ["command-line-utilities", "development-tools", "asynchronous"]
 
+# Keep the published crate lean: only include what's required to build/use the crate.
+# This avoids exceeding crates.io's upload size limits.
+include = [
+    "/Cargo.toml",
+    "/README.md",
+    "/LICENSE-*",
+    "/src/**",
+    "/config/**",
+]
+
+
 [dependencies]
 anyhow = "1"
 thiserror = "2"
@@ -56,6 +67,12 @@ include_dir = "0.7"
 pkg-url = "{ host }/{ owner }/{ repo }/releases/download/{ version }/{ name }-{ version }-{ target }.{ archive-format }"
 bin-dir = "{ bin }"
 
+# Configure cargo-dist for this package
+[package.metadata.dist]
+# Build release artifacts with embedded skills for an all-in-one binary
+features = ["tiktoken", "embed-skills"]
+default-features = false
+
 # Config for 'dist'
 [workspace.metadata.dist]
 # The preferred dist version to use in CI (Cargo.toml SemVer syntax)
@@ -74,8 +91,8 @@ install-path = "CARGO_HOME"
 install-updater = false
 
 [features]
-# Default features include accurate tokenization and embedding skills into the binary
-default = ["tiktoken", "embed-skills"]
+# Defaults keep the crate small for crates.io. Embedding skills is optional.
+default = ["tiktoken"]
 # Enable accurate tokenization with OpenAI tiktoken (cl100k_base)
 # To use: cargo run --features tiktoken
 tiktoken = ["dep:tiktoken-rs"]

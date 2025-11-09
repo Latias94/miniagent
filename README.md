@@ -79,13 +79,20 @@ See `config/config-example.yaml` for a complete example.
 - Note: `provider=openai-compatible` requires a `base_url` (or `MINIAGENT_BASE_URL`).
 
 ## Skills (Claude Skills)
-This repo includes the official Claude Skills under `skills/`. At build time we embed the entire directory into the binary (via `include_dir`, feature `embed-skills` enabled by default). On first run, if no on-disk skills are found, the embedded skills are extracted to `~/.miniagent/skills` automatically. The Agent uses Progressive Disclosure:
+By default (for crates.io friendliness), miniagent does not embed the full Claude Skills to keep the crate small. On first run, if no local Skills are found, miniagent will try to fetch them to `~/.miniagent/skills` (requires network). If that fails, you'll see a hint to install them manually. You can also choose one of the following explicitly:
+
+- Runtime fetch (recommended):
+  - `miniagent skills fetch` (installs to `~/.miniagent/skills`)
+- Embed at build time (larger binary, no network needed at runtime):
+  - `cargo run --features embed-skills -- ...` or enable the feature in your build.
+
+The Agent uses Progressive Disclosure:
 
 - Level 1: The names/descriptions of all discovered skills are injected into the system prompt.
 - Level 2: The model loads full guidance using the tool `get_skill(skill_name)` when needed.
 - Level 3+: Any relative file references in the skill content (e.g., under `examples/`, `scripts/`, `templates/`, `reference/`) are rewritten to absolute paths, with a hint to use `read_file`.
 
-Examples of skill names you can load:
+Examples of skill names you can load (after fetching):
 - `internal-comms`, `webapp-testing`, `mcp-builder`, `canvas-design`, `artifacts-builder`, `document-skills/pdf`, `document-skills/pptx`, `document-skills/docx`, `document-skills/xlsx`, `slack-gif-creator`, etc.
 
 In the REPL, just describe your task; the model will decide when to call `get_skill`. You can also explicitly ask it to load a specific skill.
@@ -153,11 +160,13 @@ Tip: Adjust `completion_reserve` (default 2048) to keep room for completions.
 
 ## Build Features
 
-- Default enabled features: `tiktoken`, `embed-skills`.
-- Disable embedded skills (use on-disk skills only):
-  - `cargo run --no-default-features --features "tiktoken"`
+- Default enabled features: `tiktoken` (no embedded skills to keep the crate small).
+- Enable embedded skills (includes `./skills` at compile time):
+  - `cargo run --features "tiktoken,embed-skills"`
 - Disable tiktoken too (use approximate estimator):
   - `cargo run --no-default-features`
+
+Note: Release artifacts built with `cargo-dist` can opt-in to `embed-skills` if you prefer an all‑in‑one binary; crates.io packages exclude large assets.
 ## Installation
 
 - With cargo-binstall (prebuilt binaries):
