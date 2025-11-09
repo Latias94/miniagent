@@ -56,6 +56,7 @@ include_dir = "0.7"
 pkg-url = "{ host }/{ owner }/{ repo }/releases/download/{ version }/{ name }-{ version }-{ target }.{ archive-format }"
 bin-dir = "{ bin }"
 
+# Config for 'dist'
 [workspace.metadata.dist]
 # The preferred dist version to use in CI (Cargo.toml SemVer syntax)
 cargo-dist-version = "0.30.2"
@@ -64,14 +65,13 @@ ci = "github"
 # The installers to generate for each app
 installers = ["shell", "powershell"]
 # Target platforms to build apps for (Rust target-triple syntax)
-targets = [
-    "x86_64-unknown-linux-gnu",
-    "x86_64-pc-windows-msvc",
-    "aarch64-apple-darwin",
-    "x86_64-apple-darwin",
-]
+targets = ["aarch64-apple-darwin", "x86_64-apple-darwin", "x86_64-unknown-linux-gnu", "x86_64-pc-windows-msvc"]
 # Which actions to run on pull requests
 pr-run-mode = "plan"
+# Path that installers should place binaries in
+install-path = "CARGO_HOME"
+# Whether to install an updater program
+install-updater = false
 
 [features]
 # Default features include accurate tokenization and embedding skills into the binary
@@ -93,3 +93,8 @@ optional = true
 anyhow = "1"
 
 uuid = { version = "1", features = ["v4"] }
+
+# The profile that 'dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"
